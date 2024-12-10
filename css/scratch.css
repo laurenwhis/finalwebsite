@@ -1,0 +1,65 @@
+.header{
+    background-image:url(../Imagescratch/back3.jpg);
+    background-size: cover; 
+    background-repeat: no-repeat; 
+    background-attachment: fixed;
+    background-position: center; 
+    font-family: Arial, sans-serif;
+    color:antiquewhite; 
+    margin: 0;
+    height: 900;
+    text-align: center;
+    font-family:Verdana, Geneva, Tahoma, sans-serif;
+    font-size: 130%;
+}
+.head2 {
+    background-color: lightsteelblue;
+font-family:Verdana, Geneva, Tahoma, sans-serif;
+color: midnightblue;
+}
+.des {
+    text-align: center;
+    text-decoration: solid;
+}
+body {
+    background-color: antiquewhite;
+    
+}
+.graph {
+    background-color: rgb(255, 213, 219);
+}
+.head3{
+    background-color: lightsteelblue;
+font-family:Verdana, Geneva, Tahoma, sans-serif;
+color: midnightblue;
+}
+.head4{
+    background-color: lightsteelblue;
+    font-family:Verdana, Geneva, Tahoma, sans-serif;
+    color: midnightblue;
+}
+.box-model{
+    padding:15px;
+    background-color:rgb(255, 213, 219);
+    border:5px solid whitesmoke;
+    margin:20px;
+}
+.link{
+    font-size:x-large;
+    color: black;
+    
+}
+.footer{
+    background-image:url(../Imagescratch/back3.jpg);
+    background-size: cover; 
+    background-repeat: no-repeat; 
+    background-attachment: fixed;
+    background-position: center; 
+    font-family: Arial, sans-serif;
+    color:antiquewhite; 
+    margin: 0;
+    height: 900;
+    text-align: center;
+    font-family:Verdana, Geneva, Tahoma, sans-serif;
+    font-size: 130%;
+}

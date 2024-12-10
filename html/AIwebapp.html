@@ -1,0 +1,314 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Tetris Game</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+            background-color: #111;
+            color: white;
+        }
+
+        canvas {
+            border: 2px solid #fff;
+        }
+
+        .sidebar {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            background-color: rgba(0, 0, 0, 0.5);
+            padding: 20px;
+            border-radius: 10px;
+            color: #fff;
+        }
+
+        .sidebar h2 {
+            margin: 0 0 10px;
+        }
+
+        .sidebar p {
+            margin: 5px 0;
+        }
+
+        .key-controls {
+            font-size: 18px;
+        }
+
+        .scoreboard {
+            position: absolute;
+            top: 20px;
+            left: 20px;
+            background-color: rgba(0, 0, 0, 0.5);
+            padding: 20px;
+            border-radius: 10px;
+            color: #fff;
+        }
+
+        .scoreboard h2 {
+            margin: 0 0 10px;
+        }
+
+        .score {
+            font-size: 24px;
+        }
+    </style>
+</head>
+<body>
+    <canvas id="tetris" width="300" height="600"></canvas>
+
+    <!-- Sidebar with controls -->
+    <div class="sidebar">
+        <h2>Controls</h2>
+        <div class="key-controls">
+            <p><strong>Arrow Left</strong>: Move Left</p>
+            <p><strong>Arrow Right</strong>: Move Right</p>
+            <p><strong>Arrow Down</strong>: Move Down</p>
+            <p><strong>Arrow Up</strong>: Rotate Piece</p>
+        </div>
+    </div>
+
+    <!-- Scoreboard -->
+    <div class="scoreboard">
+        <h2>Score</h2>
+        <p class="score" id="score">0</p>
+    </div>
+
+    <script>
+        // Get the canvas and context
+        const canvas = document.getElementById('tetris');
+        const ctx = canvas.getContext('2d');
+
+        // Define game constants
+        const ROWS = 20;
+        const COLS = 10;
+        const BLOCK_SIZE = 30;
+        const COLORS = ['#ff5733', '#33ff57', '#5733ff', '#ff33a6', '#a6ff33', '#33a6ff', '#a633ff'];
+
+        // Define the game board
+        let board = Array.from({ length: ROWS }, () => Array(COLS).fill(null));
+        let gameOver = false;  // Flag to check if the game is over
+        let score = 0; // Track the score
+
+        // Define the shapes of the Tetris blocks
+        const SHAPES = [
+            [[1, 1, 1, 1]], // I shape
+            [[1, 1], [1, 1]], // O shape
+            [[1, 1, 0], [0, 1, 1]], // S shape
+            [[0, 1, 1], [1, 1, 0]], // Z shape
+            [[1, 1, 1], [0, 1, 0]], // T shape
+            [[1, 0, 0], [1, 1, 1]], // L shape
+            [[0, 0, 1], [1, 1, 1]] // J shape
+        ];
+
+        // Generate a random piece
+        function randomPiece() {
+            const shape = SHAPES[Math.floor(Math.random() * SHAPES.length)];
+            const color = COLORS[Math.floor(Math.random() * COLORS.length)];
+            return { shape, color, x: Math.floor(COLS / 2) - Math.floor(shape[0].length / 2), y: 0 };
+        }
+
+        // Draw the game board
+        function drawBoard() {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+            // Draw the blocks on the board
+            board.forEach((row, rowIndex) => {
+                row.forEach((block, colIndex) => {
+                    if (block) {
+                        ctx.fillStyle = block;
+                        ctx.fillRect(colIndex * BLOCK_SIZE, rowIndex * BLOCK_SIZE, BLOCK_SIZE, BLOCK_SIZE);
+                        ctx.strokeRect(colIndex * BLOCK_SIZE, rowIndex * BLOCK_SIZE, BLOCK_SIZE, BLOCK_SIZE);
+                    }
+                });
+            });
+        }
+
+        // Draw the current falling piece
+        function drawPiece(piece) {
+            ctx.fillStyle = piece.color;
+            piece.shape.forEach((row, rowIndex) => {
+                row.forEach((block, colIndex) => {
+                    if (block) {
+                        ctx.fillRect((piece.x + colIndex) * BLOCK_SIZE, (piece.y + rowIndex) * BLOCK_SIZE, BLOCK_SIZE, BLOCK_SIZE);
+                        ctx.strokeRect((piece.x + colIndex) * BLOCK_SIZE, (piece.y + rowIndex) * BLOCK_SIZE, BLOCK_SIZE, BLOCK_SIZE);
+                    }
+                });
+            });
+        }
+
+        // Check if the current piece can move down
+        function canMoveDown(piece) {
+            return !piece.shape.some((row, rowIndex) => {
+                return row.some((block, colIndex) => {
+                    if (block) {
+                        const newY = piece.y + rowIndex + 1;
+                        if (newY >= ROWS || board[newY][piece.x + colIndex]) {
+                            return true;
+                        }
+                    }
+                    return false;
+                });
+            });
+        }
+
+        // Check if the current piece can move left or right
+        function canMoveLeft(piece) {
+            return !piece.shape.some((row, rowIndex) => {
+                return row.some((block, colIndex) => {
+                    if (block) {
+                        const newX = piece.x + colIndex - 1;
+                        if (newX < 0 || board[piece.y + rowIndex][newX]) {
+                            return true;
+                        }
+                    }
+                    return false;
+                });
+            });
+        }
+
+        function canMoveRight(piece) {
+            return !piece.shape.some((row, rowIndex) => {
+                return row.some((block, colIndex) => {
+                    if (block) {
+                        const newX = piece.x + colIndex + 1;
+                        if (newX >= COLS || board[piece.y + rowIndex][newX]) {
+                            return true;
+                        }
+                    }
+                    return false;
+                });
+            });
+        }
+
+        // Move the piece down
+        function movePieceDown(piece) {
+            if (canMoveDown(piece)) {
+                piece.y++;
+            } else {
+                placePiece(piece);
+                checkLines();
+                piece = randomPiece();
+
+                // Increment the score when a piece is placed
+                score++;
+
+                // Update the score on the screen
+                document.getElementById('score').innerText = score;
+
+                // Check for game over: if the new piece collides at the top, end the game
+                if (collides(piece)) {
+                    gameOver = true;
+                    alert('Game Over! Final Score: ' + score);
+
+                    // Restart the game after a short delay
+                    setTimeout(restartGame, 2000); // Restart after 2 seconds
+                }
+            }
+            return piece;
+        }
+
+        // Place the current piece on the board
+        function placePiece(piece) {
+            piece.shape.forEach((row, rowIndex) => {
+                row.forEach((block, colIndex) => {
+                    if (block) {
+                        board[piece.y + rowIndex][piece.x + colIndex] = piece.color;
+                    }
+                });
+            });
+        }
+
+        // Check for full lines and remove them
+        function checkLines() {
+            for (let rowIndex = ROWS - 1; rowIndex >= 0; rowIndex--) {
+                if (board[rowIndex].every(cell => cell !== null)) {
+                    board.splice(rowIndex, 1);
+                    board.unshift(Array(COLS).fill(null));
+                }
+            }
+        }
+
+        // Handle key presses
+        function handleKeyPress(event, piece) {
+            if (event.key === 'ArrowLeft' && canMoveLeft(piece)) {
+                piece.x--;
+            } else if (event.key === 'ArrowRight' && canMoveRight(piece)) {
+                piece.x++;
+            } else if (event.key === 'ArrowDown') {
+                piece = movePieceDown(piece);
+            } else if (event.key === 'ArrowUp') {
+                rotatePiece(piece);
+            }
+            return piece;
+        }
+
+        // Rotate the piece
+        function rotatePiece(piece) {
+            const rotatedShape = piece.shape[0].map((_, index) => piece.shape.map(row => row[index])).reverse();
+            const newPiece = { ...piece, shape: rotatedShape };
+            if (!collides(newPiece)) {
+                piece.shape = rotatedShape;
+            }
+        }
+
+        // Check for collisions
+        function collides(piece) {
+            return piece.shape.some((row, rowIndex) => {
+                return row.some((block, colIndex) => {
+                    if (block) {
+                        const newY = piece.y + rowIndex;
+                        const newX = piece.x + colIndex;
+                        if (newX < 0 || newX >= COLS || newY >= ROWS || board[newY][newX]) {
+                            return true;
+                        }
+                    }
+                    return false;
+                });
+            });
+        }
+
+        // Restart the game
+        function restartGame() {
+            board = Array.from({ length: ROWS }, () => Array(COLS).fill(null)); // Reset the board
+            score = 0; // Reset the score
+            gameOver = false; // Reset game over flag
+            document.getElementById('score').innerText = score; // Reset the displayed score
+            piece = randomPiece(); // Generate a new random piece
+            gameLoop(0); // Restart the game loop
+        }
+
+        // Game loop with throttling speed (adjusted time per tick)
+        let lastTime = 0;
+        const tickInterval = 500; // milliseconds (the speed of the falling blocks)
+        
+        function gameLoop(timestamp) {
+            if (gameOver) return; // Stop the game loop if the game is over
+
+            if (timestamp - lastTime >= tickInterval) {
+                piece = movePieceDown(piece);
+                drawBoard();
+                drawPiece(piece);
+                lastTime = timestamp;
+            }
+            requestAnimationFrame(gameLoop);
+        }
+
+        // Initialize the game
+        let piece = randomPiece();
+        document.addEventListener('keydown', (event) => {
+            piece = handleKeyPress(event, piece);
+        });
+
+        gameLoop(0); // Start the game loop
+    </script>
+</body>
+</html>
